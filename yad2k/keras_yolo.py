@@ -8,7 +8,7 @@ from keras.layers import Lambda
 from keras.layers.merge import concatenate
 from keras.models import Model
 
-from ..utils import compose
+from .utils import compose
 from .keras_darknet19 import (DarknetConv2D, DarknetConv2D_BN_Leaky, darknet_body)
 
 sys.path.append('..')
@@ -62,7 +62,7 @@ def yolo_body(inputs, num_anchors, num_classes):
     return Model(inputs, x)
 
 
-def yolo_head(feats, anchors, num_classes):
+def yolo_head(feats, anchors):
     """Convert final layer features to bounding box parameters.
 
     Parameters
@@ -108,7 +108,7 @@ def yolo_head(feats, anchors, num_classes):
     conv_index = K.reshape(conv_index, [1, conv_dims[0], conv_dims[1], 1, 2])
     conv_index = K.cast(conv_index, K.dtype(feats))
     
-    feats = K.reshape(feats, [-1, conv_dims[0], conv_dims[1], num_anchors, num_classes + 5])
+    feats = K.reshape(feats, [-1, conv_dims[0], conv_dims[1], num_anchors, 5])
     conv_dims = K.cast(K.reshape(conv_dims, [1, 1, 1, 1, 2]), K.dtype(feats))
 
     # Static generation of conv_index:
@@ -122,14 +122,13 @@ def yolo_head(feats, anchors, num_classes):
     box_confidence = K.sigmoid(feats[..., 4:5])
     box_xy = K.sigmoid(feats[..., :2])
     box_wh = K.exp(feats[..., 2:4])
-    box_class_probs = K.softmax(feats[..., 5:])
 
     # Adjust preditions to each spatial grid point and anchor size.
     # Note: YOLO iterates over height index before width index.
     box_xy = (box_xy + conv_index) / conv_dims
     box_wh = box_wh * anchors_tensor / conv_dims
 
-    return box_confidence, box_xy, box_wh, box_class_probs
+    return box_confidence, box_xy, box_wh
 
 
 def yolo_boxes_to_corners(box_xy, box_wh):
