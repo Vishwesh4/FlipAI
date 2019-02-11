@@ -2,7 +2,7 @@ import random
 import tensorflow as tf
 import itertools
 import cv2
-
+import numpy as np
 class Dataloader(object):
 
     def __init__(self,df):
@@ -25,26 +25,27 @@ class Dataloader(object):
         dataset = dataset.repeat(100)
         dataset = dataset.prefetch(prefetch_batch_buffer)
         itere  = dataset.make_one_shot_iterator()
-        images,true_boxes = itere.get_next()
+        # images,true_boxes = itere.get_next()
         
-        return (images,true_boxes)
+        return itere
     
 #     def generate_train_batch(self):
 #         '''Yield a generator of training data from filename on given list of cols split for train/test'''
 #         i = 0
-#         while i < (12000):
-#             x_batch = []
-#             y_batch = []
-#             for b in range(batch_size):
-#                 if i >= (self.len_train - seq_len):
-#                     # stop-condition for a smaller final batch if data doesn't divide evenly
-#                     yield np.array(x_batch), np.array(self._encoding(y_batch))
-#                     i = 0
-#                 x, y = self._next_window(i, seq_len, normalise)
-#                 x_batch.append(x)
-#                 y_batch.extend(y)
-#                 i += 1
-#             yield np.array(x_batch), np.array(self._encoding(y_batch))
+#         while i < (12000//64):
+#             # x_batch = []
+#             # y_batch = []
+#             # for b in range(batch_size):
+#             #     if i >= (self.len_train - seq_len):
+#             #         # stop-condition for a smaller final batch if data doesn't divide evenly
+#             #         yield np.array(x_batch), np.array(self._encoding(y_batch))
+#             #         i = 0
+#             #     x, y = self._next_window(i, seq_len, normalise)
+#             #     x_batch.append(x)
+#             #     y_batch.extend(y)
+#             i += 1
+#             self.build_iterator()
+#             yield self.build_iterator()
                 
         
     def _read_image_and_resize(self,img_path,true_boxes):

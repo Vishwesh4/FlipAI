@@ -42,7 +42,6 @@ class BBregression():
         self.n_cells = self.image_size // 32
 
         self.m = self.buildModel()
-        self.model_compile()
 
     def loadWeightsFromDarknet(self, file_path):
         load_weights(self.m, file_path)
@@ -66,10 +65,7 @@ class BBregression():
 
         return Model(inputs=model_in, outputs=model)
 
-    def model_compile(self):
-        self.m.compile(Adam(lr=0.0001),loss=losses.mean_squared_error)
-        self.m.summary()
-        print('[Model] Model Compiled')
+
 
     def train_generator(self, data_gen, epochs, batch_size, steps_per_epoch, save_dir):
         timer = Timer()
