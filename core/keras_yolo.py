@@ -145,8 +145,7 @@ def yolo_boxes_to_corners(box_xy, box_wh):
 
 
 def yolo_loss(args,
-              anchors,
-              num_classes,
+              anchors,     
               rescore_confidence=False,
               print_loss=False):
     """YOLO localization loss function.
@@ -192,14 +191,14 @@ def yolo_loss(args,
     class_scale = 1
     coordinates_scale = 1
     pred_xy, pred_wh, pred_confidence, pred_class_prob = yolo_head(
-        yolo_output, anchors, num_classes)
+        yolo_output, anchors)
 
     # Unadjusted box predictions for loss.
     # TODO: Remove extra computation shared with yolo_head.
     yolo_output_shape = K.shape(yolo_output)
     feats = K.reshape(yolo_output, [
         -1, yolo_output_shape[1], yolo_output_shape[2], num_anchors,
-        num_classes + 5
+        5
     ])
     pred_boxes = K.concatenate(
         (K.sigmoid(feats[..., 0:2]), feats[..., 2:4]), axis=-1)
@@ -267,10 +266,10 @@ def yolo_loss(args,
 
     # Classification loss for matching detections.
     # NOTE: YOLO does not use categorical cross-entropy loss here.
-    matching_classes = K.cast(matching_true_boxes[..., 4], 'int32')
-    matching_classes = K.one_hot(matching_classes, num_classes)
-    classification_loss = (class_scale * detectors_mask *
-                           K.square(matching_classes - pred_class_prob))
+    # matching_classes = K.cast(matching_true_boxes[..., 4], 'int32')
+    # matching_classes = K.one_hot(matching_classes, num_classes)
+    # classification_loss = (class_scale * detectors_mask *
+    #                        K.square(matching_classes - pred_class_prob))
 
     # Coordinate loss for matching detection boxes.
     matching_boxes = matching_true_boxes[..., 0:4]
@@ -278,17 +277,17 @@ def yolo_loss(args,
                         K.square(matching_boxes - pred_boxes))
 
     confidence_loss_sum = K.sum(confidence_loss)
-    classification_loss_sum = K.sum(classification_loss)
+    # classification_loss_sum = K.sum(classification_loss)
     coordinates_loss_sum = K.sum(coordinates_loss)
     total_loss = 0.5 * (
-        confidence_loss_sum + classification_loss_sum + coordinates_loss_sum)
+        confidence_loss_sum + coordinates_loss_sum)
     if print_loss:
         total_loss = tf.Print(
             total_loss, [
-                total_loss, confidence_loss_sum, classification_loss_sum,
+                total_loss, confidence_loss_sum,
                 coordinates_loss_sum
             ],
-            message='yolo_loss, conf_loss, class_loss, box_coord_loss:')
+            message='yolo_loss, conf_loss, box_coord_loss:')
 
     return total_loss
 
@@ -301,10 +300,10 @@ def yolo(inputs, anchors, num_classes):
     return outputs
 
 
-def yolo_filter_boxes(box_confidence, boxes, box_class_probs, threshold=.6):
+def yolo_filter_boxes(box_confidence, boxes, threshold=.6):
     """Filter YOLO boxes based on object and class confidence."""
 
-    box_scores = box_confidence * box_class_probs
+    box_scores = box_confidence * 1
     box_classes = K.argmax(box_scores, axis=-1)
     box_class_scores = K.max(box_scores, axis=-1)
     prediction_mask = box_class_scores >= threshold
@@ -323,7 +322,7 @@ def yolo_eval(yolo_outputs,
               score_threshold=.6,
               iou_threshold=.5):
     """Evaluate YOLO model on given input batch and return filtered boxes."""
-    box_confidence, box_xy, box_wh, box_class_probs = yolo_outputs
+    box_confidence, box_xy, box_wh = yolo_outputs
     boxes = yolo_boxes_to_corners(box_xy, box_wh)
     boxes, scores, classes = yolo_filter_boxes(
         box_confidence, boxes, box_class_probs, threshold=score_threshold)
