@@ -1,14 +1,14 @@
 import tensorflow as tf
-import keras
-from keras.layers import Conv2D, MaxPooling2D, Input, Reshape,BatchNormalization,LeakyReLU,Dense,Activation,Flatten
-from keras import Model
+import tensorflow.keras
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Input, Reshape,BatchNormalization,LeakyReLU,Dense,Activation,Flatten
+from tensorflow.keras import Model
 import numpy as np
-from keras import regularizers, initializers
-from keras.layers import Permute, Lambda, add
-import keras.backend as K
-from keras import losses
-from keras.optimizers import Adam
-from keras.callbacks import EarlyStopping, ModelCheckpoint
+from tensorflow.keras import regularizers, initializers
+from tensorflow.keras.layers import Permute, Lambda, add
+import tensorflow.keras.backend as K
+from tensorflow.keras import losses
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 import datetime as dt
 import os
 
@@ -42,7 +42,7 @@ class BBregression():
         self.n_cells = self.image_size // 32
 
         self.m = self.buildModel()
-
+        self.model_compile()
     def loadWeightsFromDarknet(self, file_path):
         load_weights(self.m, file_path)
 
@@ -57,7 +57,7 @@ class BBregression():
             model = conv_batch_lrelu(model, 16 * 2**i, 3)
             model = MaxPooling2D(2, padding='valid')(model)
 
-        model = conv_batch_lrelu(model, 512, 3)
+        model = conv_batch_lrelu(model, 256, 3)
         model = MaxPooling2D(2, 1, padding='same')(model) 
         # model = conv_batch_lrelu(model, 512, 3)        
         model = Flatten()(model)
@@ -65,7 +65,10 @@ class BBregression():
 
         return Model(inputs=model_in, outputs=model)
 
-
+    def model_compile(self):
+        self.m.compile(loss= 'mse', optimizer=Adam(lr=0.001),metrics =['acc'])
+        self.m.summary()
+        print('[Model] Model Compiled')
 
     def train_generator(self, data_gen, epochs, batch_size, steps_per_epoch, save_dir):
         timer = Timer()
